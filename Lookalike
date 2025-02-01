@@ -1,0 +1,26 @@
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics.pairwise import cosine_similarity
+customers_df = pd.read_csv(r"C:\Users\THAKALI\Downloads\Customers (2).csv")
+transactions_df = pd.read_csv(r"C:\Users\THAKALI\Downloads\Transactions (2).csv")
+customer_spending = transactions_df.groupby("CustomerID").agg(
+    total_spent=("TotalValue", "sum"),
+    avg_purchase_value=("TotalValue", "mean"),
+    purchase_frequency=("TransactionID", "count")
+).reset_index()
+scaler = StandardScaler()
+customer_spending_scaled = scaler.fit_transform(customer_spending.iloc[:, 1:])
+similarity_matrix = cosine_similarity(customer_spending_scaled)
+similarity_df = pd.DataFrame(similarity_matrix, index=customer_spending["CustomerID"], 
+                             columns=customer_spending["CustomerID"])
+top_lookalikes = {}
+customer_subset = customer_spending["CustomerID"][:20]
+
+for cust_id in customer_subset:
+    similar_customers = similarity_df[cust_id].drop(index=cust_id).nlargest(3)
+    top_lookalikes[cust_id] = list(zip(similar_customers.index, similar_customers.values))
+lookalike_df = pd.DataFrame.from_dict(top_lookalikes, orient="index")
+lookalike_df.columns = ["Lookalike_1", "Lookalike_2", "Lookalike_3"]
+lookalike_df.to_csv("Lookalike.csv", index_label="CustomerID")
+print("Lookalike.csv has been generated successfully!")
+Lookalike.csv has been generated successfully!
